@@ -25,13 +25,23 @@ namespace ZipCodeLookup02
                 string json = new WebClient().DownloadString("http://gomashup.com/json.php?fds=geo/usa/zipcode/state/" + s + "&jsoncallback=?");
 
                 //Cleanup the list... not sure if these are supposed to be there "?(" and start and ")" at the end.
+static void Main(string[] args)
+        {
+
+            //Todo: get the list of states from https://gist.githubusercontent.com/mshafrir/2646763/raw/8b0dbb93521f5d6889502305335104218454c2bf/states_hash.json
+            int zipCodecount = 0;
+            foreach (var s in StateList._states)
+            {
+                string json = new WebClient().DownloadString("http://gomashup.com/json.php?fds=geo/usa/zipcode/state/" + s + "&jsoncallback=?");
+
+                //Cleanup the list... not sure if these are supposed to be there "?(" and start and ")" at the end.
                 if (!String.IsNullOrEmpty(json) && json.StartsWith("?("))
                     json = json.Replace("?(", "");
 
                 if (!String.IsNullOrEmpty(json) && json.EndsWith(")"))
                     json = json.Replace(")", "");
-                                
-                var result = JObject.Parse(json).SelectToken("result").ToObject<List<ZipInfo>>();               
+
+                var result = JObject.Parse(json).SelectToken("result").ToObject<List<ZipInfo>>();
                 zipCodecount += result.Count;
                 Console.WriteLine(s + ": " + result.Count.ToString());
 
@@ -53,7 +63,7 @@ namespace ZipCodeLookup02
 
             Console.WriteLine("Starting...");
 
-            //Test one using List<>
+            //Test one using List<> Linq
             Stopwatch sw = new Stopwatch();
 
             sw.Start();
@@ -62,17 +72,29 @@ namespace ZipCodeLookup02
                 TestUsingList(t);
 
             sw.Stop();
-            Console.WriteLine("Test 1 Elapsed={0}", sw.ElapsedTicks);
+            Console.WriteLine("Test 1 Linq Elapsed={0}", sw.ElapsedMilliseconds);
+
+
+            //Test two using List<> looping
+            sw.Reset();
+            sw.Start();
+
+            foreach (var t in test_values)
+                TestUsingList_Loop(t);
+
+            sw.Stop();
+            Console.WriteLine("Test 2 For Loop Elapsed={0}", sw.ElapsedMilliseconds);
 
 
             //Test two using Dictionary<string, ZipInfo>
-             sw.Start();
+            sw.Reset();
+            sw.Start();
 
             foreach (var t in test_values)
                 TestUsingDictionary(t);
 
             sw.Stop();
-            Console.WriteLine("Test 2 Elapsed={0}", sw.ElapsedTicks);
+            Console.WriteLine("Test 3 Dictionary Elapsed={0}", sw.ElapsedMilliseconds);
 
             Console.WriteLine("Test Done.");
             Console.ReadKey();
@@ -84,6 +106,18 @@ namespace ZipCodeLookup02
             //Bypassing any sanity check for brevity.
 
             return standardZipContainer.FirstOrDefault(z => z.Zipcode.Equals(zipCode));
+        }
+                
+        private static ZipInfo TestUsingList_Loop(string zipCode)
+        {
+            //Bypassing any sanity check for brevity.
+
+            for (int i = 0; i < standardZipContainer.Count; i++)
+            {
+                if (standardZipContainer[i].Zipcode.Equals(zipCode))
+                    return standardZipContainer[i];
+            }
+            return null;
         }
 
         private static ZipInfo TestUsingDictionary(string zipCode)
